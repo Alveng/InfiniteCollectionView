@@ -17,16 +17,28 @@ public protocol InfiniteCollectionViewDataSource: class {
     optional func didSelectCellAtIndexPath(collectionView: UICollectionView, indexPath: NSIndexPath)
     optional func didUpdatePageIndex(index: Int)
 }
-
+public enum AutoScrollDirection {
+    case Right
+    case Left
+}
 public class InfiniteCollectionView: UICollectionView {
     private typealias Me = InfiniteCollectionView
     private static let dummyCount: Int = 3
     private static let defaultIdentifier = "Cell"
+    private var isScrolling: Bool = false
+    
+    // MARK: Auto Slide
+    private var autoSlideInterval: NSTimeInterval = -1
+    private var autoSlideIntervalBackupForLaterUse: NSTimeInterval = -1
+    private var autoSlideTimer: NSTimer?
+    public var autoSlideDirection: AutoScrollDirection = .Right
+    
     public weak var infiniteDataSource: InfiniteCollectionViewDataSource?
     public weak var infiniteDelegate: InfiniteCollectionViewDelegate?
+    
     public var cellWidth: CGFloat = UIScreen.mainScreen().bounds.width
     private var indexOffset: Int = 0
-    private var currentIndex: Int = 0
+    public var currentIndex: Int = 0
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         configure()
@@ -34,6 +46,71 @@ public class InfiniteCollectionView: UICollectionView {
     override public init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
         super.init(frame: frame, collectionViewLayout: layout)
         configure()
+    }
+    
+    public func scrollToNext() {
+        guard !isScrolling else {
+            return
+        }
+        self.isScrolling = true
+        self.setContentOffset(CGPointMake(self.contentOffset.x + cellWidth, contentOffset.y), animated: true)
+    }
+    
+    public func scrollToPrev() {
+        guard !isScrolling else {
+            return
+        }
+        self.isScrolling = true
+        self.setContentOffset(CGPointMake(self.contentOffset.x - cellWidth, contentOffset.y), animated: true)
+    }
+    
+}
+// MARK: - Public APIs: Auto Slide
+extension InfiniteCollectionView {
+    /// zero or minus interval disables auto slide.
+    public func startAutoSlideForTimeInterval(interval: NSTimeInterval) {
+        if interval > 0 {
+            stopAutoSlide()
+            autoSlideInterval = interval
+            autoSlideTimer = NSTimer.scheduledTimerWithTimeInterval(
+                interval,
+                target: self,
+                selector: #selector(InfiniteCollectionView.autoSlideCallback(_:)),
+                userInfo: nil,
+                repeats: true)
+        }
+    }
+    
+    public func pauseAutoSlide() {
+        if autoSlideInterval > 0 {
+            autoSlideIntervalBackupForLaterUse = autoSlideInterval
+        }
+        autoSlideInterval = -1
+        autoSlideTimer?.invalidate()
+        autoSlideTimer = nil
+    }
+    
+    public func resumeAutoSlide() {
+        if autoSlideIntervalBackupForLaterUse > 0 {
+            startAutoSlideForTimeInterval(autoSlideIntervalBackupForLaterUse)
+        }
+    }
+    
+    public func stopAutoSlide() {
+        autoSlideInterval = -1
+        autoSlideIntervalBackupForLaterUse = -1
+        autoSlideTimer?.invalidate()
+        autoSlideTimer = nil
+    }
+    
+    public func autoSlideCallback(timer: NSTimer) {
+        dispatch_async(dispatch_get_main_queue()) {
+            if self.autoSlideDirection == .Right {
+                self.scrollToNext()
+            } else {
+                self.scrollToPrev()
+            }
+        }
     }
 }
 
@@ -72,7 +149,8 @@ private extension InfiniteCollectionView {
         }
         let centerPoint = CGPoint(x: scrollView.frame.size.width / 2 + scrollView.contentOffset.x, y: scrollView.frame.size.height / 2 + scrollView.contentOffset.y)
         guard let indexPath = indexPathForItemAtPoint(centerPoint) else { return }
-        infiniteDelegate?.didUpdatePageIndex?(correctedIndex(indexPath.item - indexOffset))
+        currentIndex = correctedIndex(indexPath.item - indexOffset)
+        infiniteDelegate?.didUpdatePageIndex?(currentIndex)
     }
     func shiftContentArray(offset: Int) {
         indexOffset += offset
@@ -95,6 +173,7 @@ private extension InfiniteCollectionView {
             return 0
         }
     }
+    
 }
 
 // MARK: - UICollectionViewDataSource
@@ -116,9 +195,33 @@ extension InfiniteCollectionView: UICollectionViewDataSource {
 // MARK: - UICollectionViewDelegate
 extension InfiniteCollectionView: UICollectionViewDelegate {
     public func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        pauseAutoSlide()
         infiniteDelegate?.didSelectCellAtIndexPath?(self, indexPath: NSIndexPath(forRow: correctedIndex(indexPath.item - indexOffset), inSection: 0))
     }
     public func scrollViewDidScroll(scrollView: UIScrollView) {
         centerIfNeeded(scrollView)
+        isScrolling = true
+    }
+
+    public func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
+        isScrolling = false
+        resumeAutoSlide()
+
+    }
+    public func scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if decelerate == false {
+            isScrolling = false
+        }
+    }
+
+    public func scrollViewWillBeginDragging(scrollView: UIScrollView) {
+        isScrolling = true
+        pauseAutoSlide()
+    }
+    
+    public func scrollViewDidEndScrollingAnimation(scrollView: UIScrollView) {
+        isScrolling = false
+        resumeAutoSlide()
     }
 }
+
