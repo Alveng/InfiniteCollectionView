@@ -52,6 +52,7 @@ public class InfiniteCollectionView: UICollectionView {
         guard !isScrolling else {
             return
         }
+        arrangePosition(self)
         self.isScrolling = true
         self.setContentOffset(CGPointMake(self.contentOffset.x + cellWidth, contentOffset.y), animated: true)
     }
@@ -60,6 +61,7 @@ public class InfiniteCollectionView: UICollectionView {
         guard !isScrolling else {
             return
         }
+        arrangePosition(self)
         self.isScrolling = true
         self.setContentOffset(CGPointMake(self.contentOffset.x - cellWidth, contentOffset.y), animated: true)
     }
@@ -69,28 +71,42 @@ public class InfiniteCollectionView: UICollectionView {
 extension InfiniteCollectionView {
     /// zero or minus interval disables auto slide.
     public func startAutoSlideForTimeInterval(interval: NSTimeInterval) {
-        if interval > 0 {
-            stopAutoSlide()
-            autoSlideInterval = interval
-            autoSlideTimer = NSTimer.scheduledTimerWithTimeInterval(
-                interval,
-                target: self,
-                selector: #selector(InfiniteCollectionView.autoSlideCallback(_:)),
-                userInfo: nil,
-                repeats: true)
+        guard isPlayAutoSlide() == false && interval > 0 else {
+            return
         }
+        
+        stopAutoSlide()
+        centerIfNeeded(self)
+        isScrolling = false
+        autoSlideInterval = interval
+        autoSlideTimer = NSTimer.scheduledTimerWithTimeInterval(
+            interval,
+            target: self,
+            selector: #selector(InfiniteCollectionView.autoSlideCallback(_:)),
+            userInfo: nil,
+            repeats: true)
+        
     }
     
     public func pauseAutoSlide() {
+        guard isPlayAutoSlide() == true else {
+            return
+        }
+        
         if autoSlideInterval > 0 {
             autoSlideIntervalBackupForLaterUse = autoSlideInterval
         }
         autoSlideInterval = -1
         autoSlideTimer?.invalidate()
         autoSlideTimer = nil
+        arrangePosition(self)
     }
     
     public func resumeAutoSlide() {
+        guard isPlayAutoSlide() == false else {
+            return
+        }
+        
         if autoSlideIntervalBackupForLaterUse > 0 {
             startAutoSlideForTimeInterval(autoSlideIntervalBackupForLaterUse)
         }
@@ -112,6 +128,13 @@ extension InfiniteCollectionView {
             }
         }
     }
+    
+    public func isPlayAutoSlide() -> Bool {
+        guard let _ = autoSlideTimer where autoSlideInterval > 0 else {
+            return false
+        }
+        return true
+    }
 }
 
 // MARK: - private
@@ -120,6 +143,11 @@ private extension InfiniteCollectionView {
         delegate = self
         dataSource = self
         registerClass(UICollectionViewCell.self, forCellWithReuseIdentifier: Me.defaultIdentifier)
+    }
+    
+    func arrangePosition(scrollView: UIScrollView) {
+        let offset = scrollView.contentOffset.x % cellWidth
+        scrollView.contentOffset.x = scrollView.contentOffset.x  - offset
     }
     
     func centerIfNeeded(scrollView: UIScrollView) {
