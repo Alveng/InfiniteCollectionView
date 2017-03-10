@@ -15,7 +15,7 @@ public protocol InfiniteCollectionViewDataSource: class {
 
 @objc public protocol InfiniteCollectionViewDelegate: class {
     optional func didSelectCellAtIndexPath(collectionView: UICollectionView, indexPath: NSIndexPath)
-    optional func didUpdatePageIndex(index: Int)
+    optional func didUpdatedPageIndex(index: Int)
 }
 public enum AutoScrollDirection {
     case Right
@@ -38,7 +38,14 @@ public class InfiniteCollectionView: UICollectionView {
     
     public var cellWidth: CGFloat = UIScreen.mainScreen().bounds.width
     private var indexOffset: Int = 0
-    public var currentIndex: Int = 0
+    public var currentIndex: Int = 0 {
+        willSet {
+            if currentIndex != newValue {
+                infiniteDelegate?.didUpdatedPageIndex?(newValue)
+            }
+        }
+    }
+    
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         configure()
@@ -176,9 +183,14 @@ private extension InfiniteCollectionView {
             reloadData()
         }
         let centerPoint = CGPoint(x: scrollView.frame.size.width / 2 + scrollView.contentOffset.x, y: scrollView.frame.size.height / 2 + scrollView.contentOffset.y)
-        guard let indexPath = indexPathForItemAtPoint(centerPoint) else { return }
+       
+        guard let indexPath = indexPathForItemAtPoint(centerPoint) else {
+            
+            print("indexPathForItemAtPoint error")
+            return
+        }
+        
         currentIndex = correctedIndex(indexPath.item - indexOffset)
-        infiniteDelegate?.didUpdatePageIndex?(currentIndex)
     }
     func shiftContentArray(offset: Int) {
         indexOffset += offset
@@ -227,7 +239,9 @@ extension InfiniteCollectionView: UICollectionViewDelegate {
         infiniteDelegate?.didSelectCellAtIndexPath?(self, indexPath: NSIndexPath(forRow: correctedIndex(indexPath.item - indexOffset), inSection: 0))
     }
     public func scrollViewDidScroll(scrollView: UIScrollView) {
-        centerIfNeeded(scrollView)
+        dispatch_async(dispatch_get_main_queue()) {
+            self.centerIfNeeded(scrollView)
+        }
         isScrolling = true
     }
 
