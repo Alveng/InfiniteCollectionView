@@ -15,12 +15,14 @@ public protocol InfiniteCollectionViewDataSource: class {
 
 @objc public protocol InfiniteCollectionViewDelegate: class {
     optional func didSelectCellAtIndexPath(collectionView: UICollectionView, indexPath: NSIndexPath)
-    optional func didUpdatedPageIndex(index: Int)
+    optional func didUpdatePageIndex(index: Int)
 }
+
 public enum AutoScrollDirection {
     case Right
     case Left
 }
+
 public class InfiniteCollectionView: UICollectionView {
     private typealias Me = InfiniteCollectionView
     private static let dummyCount: Int = 3
@@ -38,13 +40,7 @@ public class InfiniteCollectionView: UICollectionView {
     
     public var cellWidth: CGFloat = UIScreen.mainScreen().bounds.width
     private var indexOffset: Int = 0
-    public var currentIndex: Int = 0 {
-        willSet {
-            if currentIndex != newValue {
-                infiniteDelegate?.didUpdatedPageIndex?(newValue)
-            }
-        }
-    }
+    public var currentIndex: Int = 0
     
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -185,12 +181,10 @@ private extension InfiniteCollectionView {
         let centerPoint = CGPoint(x: scrollView.frame.size.width / 2 + scrollView.contentOffset.x, y: scrollView.frame.size.height / 2 + scrollView.contentOffset.y)
        
         guard let indexPath = indexPathForItemAtPoint(centerPoint) else {
-            
-            print("indexPathForItemAtPoint error")
             return
         }
-        
         currentIndex = correctedIndex(indexPath.item - indexOffset)
+        infiniteDelegate?.didUpdatePageIndex?(currentIndex)
     }
     func shiftContentArray(offset: Int) {
         indexOffset += offset
