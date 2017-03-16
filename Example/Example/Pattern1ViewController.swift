@@ -15,13 +15,13 @@ final class Pattern1ViewController: UIViewController {
         didSet {
             collectionView.infiniteDataSource = self
             collectionView.infiniteDelegate = self
-            collectionView.cellWidth = UIScreen.mainScreen().bounds.width
-            collectionView.registerNib(ImageCollectionViewCell.nib, forCellWithReuseIdentifier: ImageCollectionViewCell.identifier)
+            collectionView.cellWidth = UIScreen.main.bounds.width
+            collectionView.register(ImageCollectionViewCell.nib, forCellWithReuseIdentifier: ImageCollectionViewCell.identifier)
         }
     }
     @IBOutlet weak var layout: UICollectionViewFlowLayout! {
         didSet {
-            layout.itemSize = CGSize(width: UIScreen.mainScreen().bounds.width, height: UIScreen.mainScreen().bounds.height)
+            layout.itemSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         }
     }
     @IBOutlet weak var pageControl: UIPageControl! {
@@ -37,17 +37,17 @@ final class Pattern1ViewController: UIViewController {
 
 // MARK: - InfiniteCollectionViewDataSource, InfiniteCollectionViewDelegate
 extension Pattern1ViewController: InfiniteCollectionViewDataSource, InfiniteCollectionViewDelegate {
-    func numberOfItems(collectionView: UICollectionView) -> Int {
+    func numberOfItems(_ collectionView: UICollectionView) -> Int {
         return items.count
     }
-    func cellForItemAtIndexPath(collectionView: UICollectionView, dequeueIndexPath: NSIndexPath, indexPath: NSIndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCellWithReuseIdentifier(ImageCollectionViewCell.identifier, forIndexPath: dequeueIndexPath) as! ImageCollectionViewCell
+    func cellForItemAtIndexPath(_ collectionView: UICollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCollectionViewCell.identifier, for: dequeueIndexPath) as! ImageCollectionViewCell
         cell.configure(dequeueIndexPath: indexPath)
         return cell
     }
-    func didSelectCellAtIndexPath(collectionView: UICollectionView, indexPath: NSIndexPath) {
+    func didSelectCellAtIndexPath(_ collectionView: UICollectionView, indexPath: IndexPath) {
     }
-    func didUpdatePageIndex(index: Int) {
+    func didUpdatePageIndex(_ index: Int) {
         pageControl.currentPage = index
     }
 }

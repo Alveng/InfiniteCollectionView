@@ -9,38 +9,38 @@
 import UIKit
 
 public protocol InfiniteCollectionViewDataSource: class {
-    func cellForItemAtIndexPath(collectionView: UICollectionView, dequeueIndexPath: NSIndexPath, indexPath: NSIndexPath) -> UICollectionViewCell
-    func numberOfItems(collectionView: UICollectionView) -> Int
+    func cellForItemAtIndexPath(_ collectionView: UICollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath) -> UICollectionViewCell
+    func numberOfItems(_ collectionView: UICollectionView) -> Int
 }
 
 @objc public protocol InfiniteCollectionViewDelegate: class {
-    optional func didSelectCellAtIndexPath(collectionView: UICollectionView, indexPath: NSIndexPath)
-    optional func didChangePageIndex(collectionView: UICollectionView, pageIndex: Int)
-    optional func collectionViewDidScroll(collectionView: UICollectionView, pageIndex: Int)
+    @objc optional func didSelectCellAtIndexPath(_ collectionView: UICollectionView, indexPath: IndexPath)
+    @objc optional func didChangePageIndex(_ collectionView: UICollectionView, pageIndex: Int)
+    @objc optional func collectionViewDidScroll(_ collectionView: UICollectionView, pageIndex: Int)
 }
 
 public enum AutoScrollDirection {
-    case Right
-    case Left
+    case right
+    case left
 }
 
-public class InfiniteCollectionView: UICollectionView {
-    private typealias Me = InfiniteCollectionView
-    private static let dummyCount: Int = 3
-    private static let defaultIdentifier = "Cell"
+open class InfiniteCollectionView: UICollectionView {
+    fileprivate typealias Me = InfiniteCollectionView
+    fileprivate static let dummyCount: Int = 3
+    fileprivate static let defaultIdentifier = "Cell"
     
     // MARK: Auto Slide
-    private var autoSlideInterval: NSTimeInterval = -1
-    private var autoSlideIntervalBackupForLaterUse: NSTimeInterval = -1
-    private var autoSlideTimer: NSTimer?
-    public var autoSlideDirection: AutoScrollDirection = .Right
+    fileprivate var autoSlideInterval: TimeInterval = -1
+    fileprivate var autoSlideIntervalBackupForLaterUse: TimeInterval = -1
+    fileprivate var autoSlideTimer: Timer?
+    open var autoSlideDirection: AutoScrollDirection = .right
     
-    public weak var infiniteDataSource: InfiniteCollectionViewDataSource?
-    public weak var infiniteDelegate: InfiniteCollectionViewDelegate?
+    open weak var infiniteDataSource: InfiniteCollectionViewDataSource?
+    open weak var infiniteDelegate: InfiniteCollectionViewDelegate?
     
-    public var cellWidth: CGFloat = UIScreen.mainScreen().bounds.width
-    private var indexOffset: Int = 0
-    public var currentIndex: Int = 0
+    open var cellWidth: CGFloat = UIScreen.main.bounds.width
+    fileprivate var indexOffset: Int = 0
+    open var currentIndex: Int = 0
     
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -51,19 +51,19 @@ public class InfiniteCollectionView: UICollectionView {
         configure()
     }
     
-    public func scrollToNext() {
+    open func scrollToNext() {
         
         arrangePosition(self)
-        self.setContentOffset(CGPointMake(self.contentOffset.x + cellWidth, contentOffset.y), animated: true)
+        self.setContentOffset(CGPoint(x: self.contentOffset.x + cellWidth, y: contentOffset.y), animated: true)
     }
     
-    public func scrollToPrev() {
+    open func scrollToPrev() {
         
         arrangePosition(self)
-        self.setContentOffset(CGPointMake(self.contentOffset.x - cellWidth, contentOffset.y), animated: true)
+        self.setContentOffset(CGPoint(x: self.contentOffset.x - cellWidth, y: contentOffset.y), animated: true)
     }
     
-    public func updateInfiniteCollectionView() {
+    open func updateInfiniteCollectionView() {
         centerIfNeeded(self)
     }
     
@@ -71,7 +71,7 @@ public class InfiniteCollectionView: UICollectionView {
 // MARK: - Public APIs: Auto Slide
 extension InfiniteCollectionView {
     /// zero or minus interval disables auto slide.
-    public func startAutoSlideForTimeInterval(interval: NSTimeInterval) {
+    public func startAutoSlideForTimeInterval(_ interval: TimeInterval) {
         guard isPlayAutoSlide() == false && interval > 0 else {
             return
         }
@@ -79,8 +79,8 @@ extension InfiniteCollectionView {
         stopAutoSlide()
         centerIfNeeded(self)
         autoSlideInterval = interval
-        autoSlideTimer = NSTimer.scheduledTimerWithTimeInterval(
-            interval,
+        autoSlideTimer = Timer.scheduledTimer(
+            timeInterval: interval,
             target: self,
             selector: #selector(InfiniteCollectionView.autoSlideCallback(_:)),
             userInfo: nil,
@@ -119,9 +119,9 @@ extension InfiniteCollectionView {
         autoSlideTimer = nil
     }
     
-    public func autoSlideCallback(timer: NSTimer) {
-        dispatch_async(dispatch_get_main_queue()) {
-            if self.autoSlideDirection == .Right {
+    public func autoSlideCallback(_ timer: Timer) {
+        DispatchQueue.main.async {
+            if self.autoSlideDirection == .right {
                 self.scrollToNext()
             } else {
                 self.scrollToPrev()
@@ -130,7 +130,7 @@ extension InfiniteCollectionView {
     }
     
     public func isPlayAutoSlide() -> Bool {
-        guard let _ = autoSlideTimer where autoSlideInterval > 0 else {
+        guard let _ = autoSlideTimer, autoSlideInterval > 0 else {
             return false
         }
         return true
@@ -142,15 +142,15 @@ private extension InfiniteCollectionView {
     func configure() {
         delegate = self
         dataSource = self
-        registerClass(UICollectionViewCell.self, forCellWithReuseIdentifier: Me.defaultIdentifier)
+        register(UICollectionViewCell.self, forCellWithReuseIdentifier: Me.defaultIdentifier)
     }
     
-    func arrangePosition(scrollView: UIScrollView) {
-        let offset = scrollView.contentOffset.x % cellWidth
+    func arrangePosition(_ scrollView: UIScrollView) {
+        let offset = scrollView.contentOffset.x.truncatingRemainder(dividingBy: cellWidth)
         scrollView.contentOffset.x = scrollView.contentOffset.x  - offset
     }
     
-    func centerIfNeeded(scrollView: UIScrollView) {
+    func centerIfNeeded(_ scrollView: UIScrollView) {
         let currentOffset = contentOffset
         let contentWidth = totalContentWidth()
         // Calculate the centre of content X position offset and the current distance from that centre point
@@ -162,7 +162,7 @@ private extension InfiniteCollectionView {
             // Amount of cells to shift (whole number) - conditional statement due to nature of +ve or -ve cellcount
             let shiftCells = Int((cellcount > 0) ? floor(cellcount) : ceil(cellcount))
             // Amount left over to correct for
-            let offsetCorrection = (abs(cellcount) % 1) * cellWidth
+            let offsetCorrection = (abs(cellcount).truncatingRemainder(dividingBy: 1)) * cellWidth
             // Scroll back to the centre of the view, offset by the correction to ensure it's not noticable
             var isRightScrolling = true
             if centerOffsetX > contentOffset.x {
@@ -188,14 +188,14 @@ private extension InfiniteCollectionView {
         
         let centerPoint = CGPoint(x: scrollView.frame.size.width / 2 + scrollView.contentOffset.x, y: scrollView.frame.size.height / 2 + scrollView.contentOffset.y)
         
-        guard let indexPath = indexPathForItemAtPoint(centerPoint) else {
+        guard let indexPath = indexPathForItem(at: centerPoint) else {
             return
         }
         currentIndex = correctedIndex(indexPath.item - indexOffset)
         infiniteDelegate?.collectionViewDidScroll?(self, pageIndex:currentIndex)
         
     }
-    func shiftContentArray(offset: Int) {
+    func shiftContentArray(_ offset: Int) {
         indexOffset += offset
     }
     
@@ -204,7 +204,7 @@ private extension InfiniteCollectionView {
         return CGFloat(numberOfCells) * cellWidth
     }
     
-    func correctedIndex(indexToCorrect: Int) -> Int {
+    func correctedIndex(_ indexToCorrect: Int) -> Int {
         if let numberOfItems = infiniteDataSource?.numberOfItems(self) {
             if numberOfItems > indexToCorrect && indexToCorrect >= 0 {
                 return indexToCorrect
@@ -223,7 +223,7 @@ private extension InfiniteCollectionView {
 
 // MARK: - UICollectionViewDataSource
 extension InfiniteCollectionView: UICollectionViewDataSource {
-    public func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         
         guard let numberOfItems = infiniteDataSource?.numberOfItems(self) else {
             return 0
@@ -236,11 +236,11 @@ extension InfiniteCollectionView: UICollectionViewDataSource {
         return Me.dummyCount * numberOfItems
         
     }
-    public func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
+    public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         var maybeCell: UICollectionViewCell!
-        maybeCell = infiniteDataSource?.cellForItemAtIndexPath(self, dequeueIndexPath: indexPath, indexPath: NSIndexPath(forRow: correctedIndex(indexPath.item - indexOffset), inSection: 0))
+        maybeCell = infiniteDataSource?.cellForItemAtIndexPath(self, dequeueIndexPath: indexPath, indexPath: IndexPath(row: correctedIndex(indexPath.item - indexOffset), section: 0))
         if maybeCell == nil {
-            maybeCell = collectionView.dequeueReusableCellWithReuseIdentifier(Me.defaultIdentifier, forIndexPath: indexPath)
+            maybeCell = collectionView.dequeueReusableCell(withReuseIdentifier: Me.defaultIdentifier, for: indexPath)
         }
         return maybeCell
     }
@@ -248,34 +248,34 @@ extension InfiniteCollectionView: UICollectionViewDataSource {
 
 // MARK: - UICollectionViewDelegate
 extension InfiniteCollectionView: UICollectionViewDelegate {
-    public func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+    public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         pauseAutoSlide()
-        infiniteDelegate?.didSelectCellAtIndexPath?(self, indexPath: NSIndexPath(forRow: correctedIndex(indexPath.item - indexOffset), inSection: 0))
+        infiniteDelegate?.didSelectCellAtIndexPath?(self, indexPath: IndexPath(row: correctedIndex(indexPath.item - indexOffset), section: 0))
     }
-    public func scrollViewDidScroll(scrollView: UIScrollView) {
-        dispatch_async(dispatch_get_main_queue()) {
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        DispatchQueue.main.async {
             self.centerIfNeeded(scrollView)
         }
     }
     
-    public func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         resumeAutoSlide()
         infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
         
     }
     
-    public func scrollViewDidEndDragging(scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if decelerate == false {
             resumeAutoSlide()
             infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
         }
     }
     
-    public func scrollViewWillBeginDragging(scrollView: UIScrollView) {
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
         pauseAutoSlide()
     }
     
-    public func scrollViewDidEndScrollingAnimation(scrollView: UIScrollView) {
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         resumeAutoSlide()
         infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
     }
