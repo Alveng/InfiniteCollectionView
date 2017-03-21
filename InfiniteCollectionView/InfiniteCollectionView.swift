@@ -9,14 +9,14 @@
 import UIKit
 
 public protocol InfiniteCollectionViewDataSource: class {
-    func cellForItemAtIndexPath(_ collectionView: UICollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath) -> UICollectionViewCell
-    func numberOfItems(_ collectionView: UICollectionView) -> Int
+    func cellForItemAtIndexPath(_ collectionView: InfiniteCollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath) -> UICollectionViewCell
+    func numberOfItems(_ collectionView: InfiniteCollectionView) -> Int
 }
 
 @objc public protocol InfiniteCollectionViewDelegate: class {
-    @objc optional func didSelectCellAtIndexPath(_ collectionView: UICollectionView, indexPath: IndexPath)
-    @objc optional func didChangePageIndex(_ collectionView: UICollectionView, pageIndex: Int)
-    @objc optional func collectionViewDidScroll(_ collectionView: UICollectionView, pageIndex: Int)
+    @objc optional func didSelectCellAtIndexPath(_ collectionView: InfiniteCollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath)
+    @objc optional func didChangePageIndex(_ collectionView: InfiniteCollectionView, pageIndex: Int)
+    @objc optional func collectionViewDidScroll(_ collectionView: InfiniteCollectionView, pageIndex: Int)
 }
 
 public enum AutoScrollDirection {
@@ -250,7 +250,7 @@ extension InfiniteCollectionView: UICollectionViewDataSource {
 extension InfiniteCollectionView: UICollectionViewDelegate {
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         pauseAutoSlide()
-        infiniteDelegate?.didSelectCellAtIndexPath?(self, indexPath: IndexPath(row: correctedIndex(indexPath.item - indexOffset), section: 0))
+        infiniteDelegate?.didSelectCellAtIndexPath?(self, dequeueIndexPath: indexPath, indexPath: IndexPath(row: correctedIndex(indexPath.item - indexOffset), section: 0))
     }
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         DispatchQueue.main.async {
