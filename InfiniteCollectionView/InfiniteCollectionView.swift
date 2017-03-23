@@ -205,7 +205,7 @@ private extension InfiniteCollectionView {
     }
     
     func correctedIndex(_ indexToCorrect: Int) -> Int {
-        if let numberOfItems = infiniteDataSource?.numberOfItems(self) {
+        if let numberOfItems = infiniteDataSource?.numberOfItems(self), numberOfItems > 0 {
             if numberOfItems > indexToCorrect && indexToCorrect >= 0 {
                 return indexToCorrect
             } else {
