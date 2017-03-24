@@ -40,7 +40,13 @@ open class InfiniteCollectionView: UICollectionView {
     
     open var cellWidth: CGFloat = UIScreen.main.bounds.width
     fileprivate var indexOffset: Int = 0
-    open var currentIndex: Int = 0
+    open var currentIndex: Int = 0 {
+        willSet{
+            if currentIndex != newValue {
+                infiniteDelegate?.didChangePageIndex?(self, pageIndex:newValue)
+            }
+        }
+    }
     
     required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
@@ -151,6 +157,10 @@ private extension InfiniteCollectionView {
     }
     
     func centerIfNeeded(_ scrollView: UIScrollView) {
+        guard let numberOfItems = infiniteDataSource?.numberOfItems(self), numberOfItems > 1 else {
+            return
+        }
+        
         let currentOffset = contentOffset
         let contentWidth = totalContentWidth()
         // Calculate the centre of content X position offset and the current distance from that centre point
@@ -177,13 +187,7 @@ private extension InfiniteCollectionView {
             // Make content shift as per shiftCells
             shiftContentArray(correctedIndex(shiftCells))
             
-            let numberOfItems = infiniteDataSource?.numberOfItems(self) ?? 0
-            if numberOfItems > 3 {
-                reloadData()
-            } else if numberOfItems == 2 && isRightScrolling == true {
-                reloadData()
-
-            }
+            reloadData()
         }
         
         let centerPoint = CGPoint(x: scrollView.frame.size.width / 2 + scrollView.contentOffset.x, y: scrollView.frame.size.height / 2 + scrollView.contentOffset.y)
@@ -212,13 +216,12 @@ private extension InfiniteCollectionView {
                 let countInIndex = Float(indexToCorrect) / Float(numberOfItems)
                 let flooredValue = Int(floor(countInIndex))
                 let offset = numberOfItems * flooredValue
-                return indexToCorrect - offset
+                return max(indexToCorrect - offset , 0)
             }
         } else {
             return 0
         }
     }
-    
 }
 
 // MARK: - UICollectionViewDataSource
@@ -260,14 +263,12 @@ extension InfiniteCollectionView: UICollectionViewDelegate {
     
     public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         resumeAutoSlide()
-        infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
         
     }
     
     public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         if decelerate == false {
             resumeAutoSlide()
-            infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
         }
     }
     
@@ -277,7 +278,6 @@ extension InfiniteCollectionView: UICollectionViewDelegate {
     
     public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         resumeAutoSlide()
-        infiniteDelegate?.didChangePageIndex?(self, pageIndex:self.currentIndex)
     }
 }
 
