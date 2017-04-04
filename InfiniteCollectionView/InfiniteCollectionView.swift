@@ -68,6 +68,11 @@ open class InfiniteCollectionView: UICollectionView {
         arrangePosition(self)
         self.setContentOffset(CGPoint(x: self.contentOffset.x - cellWidth, y: contentOffset.y), animated: true)
     }
+    open func resetInfiniteCollectionView() {
+        currentIndex = 0
+        indexOffset = 0
+        self.contentOffset.x = 0
+    }
     
     open func updateInfiniteCollectionView() {
         centerIfNeeded(self)
