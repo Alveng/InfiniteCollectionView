@@ -10,59 +10,39 @@ import UIKit
 import InfiniteCollectionView
 
 final class MainViewController: UIViewController {
-    enum Pattern: Int, CustomStringConvertible {
-        case pattern1
-        case pattern2
-        static var count: Int { return 2 }
-        var description: String {
-            switch self {
-            case .pattern1: return "pattern1"
-            case .pattern2: return "pattern2"
-            }
-        }
-    }
-    fileprivate let identifier = "tableViewCell"
-    fileprivate var cellHeight: CGFloat {
-        return (UIScreen.main.bounds.height - 64) / CGFloat(Pattern.count)
-    }
+    var patterns = ["pattern1", "pattern2"]
+    let identifier = "tableViewCell"
     @IBOutlet weak var tableView: UITableView! {
         didSet {
             tableView.delegate = self
             tableView.dataSource = self
-            tableView.rowHeight = cellHeight
-            tableView.estimatedRowHeight = cellHeight
-            tableView.separatorInset = .zero
-            tableView.layoutMargins = .zero
             tableView.register(UITableViewCell.self, forCellReuseIdentifier: identifier)
+            tableView.rowHeight = 100
+            tableView.estimatedRowHeight = 100
         }
     }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        guard let selectedIndexPath = tableView.indexPathForSelectedRow else { return }
-        tableView.deselectRow(at: selectedIndexPath, animated: true)
+        if let selectedIndexPath = tableView.indexPathForSelectedRow {
+            tableView.deselectRow(at: selectedIndexPath, animated: true)
+        }
     }
 }
 
-// MARK: - UITableViewDelegate, UITableViewDataSource
 extension MainViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return Pattern.count
+        return patterns.count
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: identifier)!
-        let pattern = Pattern(rawValue: indexPath.row)
-        cell.textLabel?.text = pattern?.description
-        cell.textLabel?.textAlignment = .center
-        cell.textLabel?.font = UIFont.boldSystemFont(ofSize: 24)
+        cell.textLabel?.text = patterns[indexPath.row]
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let pattern = Pattern(rawValue: indexPath.row) else { return }
-        switch pattern {
-        case .pattern1:
+        if indexPath.row == 0 {
             let controller = Pattern1ViewController.createFromStoryboard()
             navigationController?.pushViewController(controller, animated: true)
-        case .pattern2:
+        } else if indexPath.row == 1 {
             let controller = Pattern2ViewController.createFromStoryboard()
             navigationController?.pushViewController(controller, animated: true)
         }

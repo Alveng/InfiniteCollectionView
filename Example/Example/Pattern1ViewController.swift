@@ -10,58 +10,44 @@ import UIKit
 import InfiniteCollectionView
 
 final class Pattern1ViewController: UIViewController {
-    var itemsCount: Int = 5
+    var items = ["1", "2", "3", "4"]
     @IBOutlet weak var collectionView: InfiniteCollectionView! {
         didSet {
             collectionView.infiniteDataSource = self
             collectionView.infiniteDelegate = self
+            collectionView.cellWidth = UIScreen.main.bounds.width
             collectionView.register(ImageCollectionViewCell.nib, forCellWithReuseIdentifier: ImageCollectionViewCell.identifier)
         }
     }
     @IBOutlet weak var layout: UICollectionViewFlowLayout! {
         didSet {
-            layout.itemSize = UIScreen.main.bounds.size
+            layout.itemSize = CGSize(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         }
     }
     @IBOutlet weak var pageControl: UIPageControl! {
         didSet {
-            pageControl.numberOfPages = itemsCount
+            pageControl.numberOfPages = items.count
         }
-    }
-    required init?(coder aDecoder: NSCoder) {
-        super.init(coder: aDecoder)
-        NotificationCenter.default.addObserver(self, selector: #selector(Pattern1ViewController.rotate(_:)), name: .UIDeviceOrientationDidChange, object: nil)
-    }
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: .UIDeviceOrientationDidChange, object: nil)
     }
     static func createFromStoryboard() -> Pattern1ViewController {
         let storyboard = UIStoryboard(name: "Pattern1", bundle: nil)
         return storyboard.instantiateInitialViewController() as! Pattern1ViewController
     }
-    func rotate(_ notification: Notification) {
-        layout.itemSize = UIScreen.main.bounds.size
-        layout.invalidateLayout()
-        collectionView.rotate(notification)
-        collectionView.layoutIfNeeded()
-        collectionView.setNeedsLayout()
-    }
 }
 
 // MARK: - InfiniteCollectionViewDataSource, InfiniteCollectionViewDelegate
 extension Pattern1ViewController: InfiniteCollectionViewDataSource, InfiniteCollectionViewDelegate {
-    func number(ofItems collectionView: UICollectionView) -> Int {
-        return itemsCount
+    func numberOfItems(_ collectionView: UICollectionView) -> Int {
+        return items.count
     }
-    func collectionView(_ collectionView: UICollectionView, dequeueForItemAt dequeueIndexPath: IndexPath, cellForItemAt usableIndexPath: IndexPath) -> UICollectionViewCell {
+    func cellForItemAtIndexPath(_ collectionView: UICollectionView, dequeueIndexPath: IndexPath, indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCollectionViewCell.identifier, for: dequeueIndexPath) as! ImageCollectionViewCell
-        cell.configure(indexPath: usableIndexPath)
+        cell.configure(dequeueIndexPath: indexPath)
         return cell
     }
-    func infiniteCollectionView(_ collectionView: UICollectionView, didSelectItemAt usableIndexPath: IndexPath) {
-        print("didSelectItemAt: \(usableIndexPath.item)")
+    func didSelectCellAtIndexPath(_ collectionView: UICollectionView, indexPath: IndexPath) {
     }
-    func scrollView(_ scrollView: UIScrollView, pageIndex: Int) {
-        pageControl.currentPage = pageIndex
+    func didUpdatePageIndex(_ index: Int) {
+        pageControl.currentPage = index
     }
 }
